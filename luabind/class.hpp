@@ -228,7 +228,9 @@ namespace luabind
 	
 		struct LUABIND_API create_class
 		{
+		    // Associated with keyword "class" in globals
 			static int stage1(lua_State* L);
+			// Closure
 			static int stage2(lua_State* L);
 		};
 

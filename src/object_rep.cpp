@@ -94,8 +94,13 @@ namespace luabind { namespace detail
 
       int set_instance_value(lua_State* L)
       {
-          lua_getfenv(L, 1);
+		  //Pushes onto the stack the environment table of the value at the given index.
+          //lua_getfenv(L, 1);
+          lua_getuservalue (L,1);
+		  //Pushes a copy of the element at the given valid index onto the stack.
+		  //copiesthepreviousenvtable
           lua_pushvalue(L, 2);
+		  //Pushes onto the stack the value t[k], where t is the value at the given valid index and k is the value at the top of the stack.
           lua_rawget(L, -2);
 
           if (lua_isnil(L, -1) && lua_getmetatable(L, -2))
@@ -129,7 +134,8 @@ namespace luabind { namespace detail
           {
               lua_newtable(L);
               lua_pushvalue(L, -1);
-              lua_setfenv(L, 1);
+              //lua_setfenv(L, 1);
+              lua_setuservalue(L,1);
               lua_pushvalue(L, 4);
               lua_setmetatable(L, -2);
           }
@@ -147,7 +153,9 @@ namespace luabind { namespace detail
 
       int get_instance_value(lua_State* L)
       {
-          lua_getfenv(L, 1);
+
+            //lua_getfenv(L, 1);    //Pushes onto the stack the environment table of the value at the given index
+            lua_getuservalue (L, 1);
           lua_pushvalue(L, 2);
           lua_rawget(L, -2);
 
@@ -262,7 +270,13 @@ namespace luabind { namespace detail
         void* storage = lua_newuserdata(L, sizeof(object_rep));
         object_rep* result = new (storage) object_rep(0, cls);
         cls->get_table(L);
-        lua_setfenv(L, -2);
+        //Pops a table from the stack and sets it as the new environment for the value at the given index.
+        //If the value at the given index is neither a function nor a thread nor a userdata, lua_setfenv returns 0. Otherwise it returns 1.
+        // sets class_rep table as environement of userdata
+        // Pops previous table (userdata remainsà)
+        //lua_setfenv(L, -2);
+        lua_setuservalue(L,-2);
+        //Pushes onto the stack the value t[n], where t is the value at the given valid index
         lua_rawgeti(L, LUA_REGISTRYINDEX, cls->metatable_ref());
         lua_setmetatable(L, -2);
         return result;

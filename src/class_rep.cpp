@@ -142,37 +142,54 @@ int luabind::detail::class_rep::constructor_dispatcher(lua_State* L)
 
     push_new_instance(L, cls);
 
+/*
+ // Matt removal
     if (super_deprecation_disabled
         && cls->get_class_type() == class_rep::lua_class
         && !cls->bases().empty())
     {
-        lua_pushstring(L, "super");
-        lua_pushvalue(L, 1);
-        lua_pushvalue(L, -3);
-        lua_pushcclosure(L, super_callback, 2);
-        lua_settable(L, LUA_GLOBALSINDEX);
-    }
 
-    lua_pushvalue(L, -1);
-    lua_replace(L, 1);
+
+//        lua_pushstring(L, "super");
+//        lua_pushvalue(L, 1);
+//        lua_pushvalue(L, -3);
+//        lua_pushcclosure(L, super_callback, 2);
+//        lua_settable(L, LUA_GLOBALSINDEX);
+
+        lua_pushstring(L, "super");
+        lua_pushglobaltable(L); // NEW
+        lua_pushvalue(L, 1);    // pushes class obj vtable
+        lua_pushvalue(L, -4);
+        lua_pushcclosure(L, super_callback, 2);
+
+
+
+        lua_settable(L, LUA_GLOBALSINDEX);
+
+    }*/
+
+// Not useful
+    lua_pushvalue(L, -1);   // Copies object_rep
+    lua_replace(L, 1);  // Replaces class_rep with adequuat object rep
 
     cls->get_table(L);
     lua_pushliteral(L, "__init");
-    lua_gettable(L, -2);
+    lua_gettable(L, -2);    //pushes onto the stack __init function for this class type
 
-    lua_insert(L, 1);
+//Moves the top element into the given valid index, shifting up the elements above this index to open space.
+    lua_insert(L, 1);   // copies function at 1
 
-    lua_pop(L, 1);
-    lua_insert(L, 1);
+    lua_pop(L, 1);  // pops  table
+    lua_insert(L, 1);   // insert object_rep at pos 1 ?
 
-    lua_call(L, args, 0);
+    lua_call(L, args, 0);   // calls init function with args, first one being
 
-    if (super_deprecation_disabled)
-    {
-        lua_pushstring(L, "super");
-        lua_pushnil(L);
-        lua_settable(L, LUA_GLOBALSINDEX);
-    }
+//    if (super_deprecation_disabled)
+//    {
+//        lua_pushstring(L, "super");
+//        lua_pushnil(L);
+//        lua_settable(L, LUA_GLOBALSINDEX);
+//    }
 
     return 1;
 }
@@ -200,32 +217,35 @@ void luabind::detail::class_rep::add_base_class(const luabind::detail::class_rep
 	m_bases.push_back(binfo);
 }
 
+// TODO to suppress at some point ?
 LUABIND_API void luabind::disable_super_deprecation()
 {
     super_deprecation_disabled = true;
 }
 
+// Looking for the right callback
 int luabind::detail::class_rep::super_callback(lua_State* L)
 {
 	int args = lua_gettop(L);
 		
 	class_rep* crep = static_cast<class_rep*>(lua_touserdata(L, lua_upvalueindex(1)));
 	class_rep* base = crep->bases()[0].base;
-
-	if (base->bases().empty())
-	{
-		lua_pushstring(L, "super");
-		lua_pushnil(L);
-		lua_settable(L, LUA_GLOBALSINDEX);
-	}
-	else
-	{
-		lua_pushstring(L, "super");
-		lua_pushlightuserdata(L, base);
-		lua_pushvalue(L, lua_upvalueindex(2));
-		lua_pushcclosure(L, super_callback, 2);
-		lua_settable(L, LUA_GLOBALSINDEX);
-	}
+//
+//	if (base->bases().empty())
+//	{
+//
+//		lua_pushnil(L);
+//		lua_setglobal(L,"super");
+//
+//	}
+//	else
+//	{
+//		lua_pushstring(L, "super");
+//		lua_pushlightuserdata(L, base);
+//		lua_pushvalue(L, lua_upvalueindex(2));
+//		lua_pushcclosure(L, super_callback, 2);
+//		lua_settable(L, LUA_GLOBALSINDEX);
+//	}
 
 	base->get_table(L);
 	lua_pushstring(L, "__init");
@@ -240,11 +260,14 @@ int luabind::detail::class_rep::super_callback(lua_State* L)
 
 	// TODO: instead of clearing the global variable "super"
 	// store it temporarily in the registry. maybe we should
-	// have some kind of warning if the super global is used?
-	lua_pushstring(L, "super");
-	lua_pushnil(L);
-	lua_settable(L, LUA_GLOBALSINDEX);
+//	// have some kind of warning if the super global is used?
+//Does the equivalent to t[k] = v, where t is the value at the given valid index, v is the value at the top of the stack, and k is the value just below the top.
+// This function pops both the key and the value from the stack. As in Lua, this function may trigger a metamethod for the "newindex" event
 
+//	lua_pushstring(L, "super");
+//	lua_pushnil(L);
+////	lua_settable(L, LUA_GLOBALSINDEX);
+//    lua_setglobal(L,"super");
 	return 0;
 }
 
@@ -292,7 +315,7 @@ int luabind::detail::class_rep::static_class_gettable(lua_State* L)
 
 	const char* key = lua_tostring(L, 2);
 
-	if (std::strlen(key) != lua_strlen(L, 2))
+	if (std::strlen(key) != lua_rawlen(L, 2))
 	{
 		lua_pushnil(L);
 		return 1;

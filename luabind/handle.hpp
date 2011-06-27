@@ -103,6 +103,8 @@ inline void handle::swap(handle& other)
 
 inline void handle::push(lua_State* interpreter) const
 {
+    //Pushes onto the stack the value t[n], where t is the value at the given valid index.
+    // The access is raw; that is, it does not invoke metamethods.
     lua_rawgeti(interpreter, LUA_REGISTRYINDEX, m_index);
 }
 

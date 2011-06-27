@@ -40,7 +40,7 @@ namespace luabind { namespace detail
 			while (lua_next(L, -2))
 			{
 				lua_pushstring(L, "__init");
-				if (lua_equal(L, -1, -3))
+				if (lua_compare(L, -1, -3,LUA_OPEQ))
 				{
 					lua_pop(L, 2);
 					continue;
@@ -48,7 +48,7 @@ namespace luabind { namespace detail
 				else lua_pop(L, 1); // __init string
 
 				lua_pushstring(L, "__finalize");
-				if (lua_equal(L, -1, -3))
+				if (lua_compare(L, -1, -3,LUA_OPEQ))
 				{
 					lua_pop(L, 2);
 					continue;
@@ -112,7 +112,7 @@ namespace luabind { namespace detail
 			lua_error(L);
 		}
 
-		if (std::strlen(lua_tostring(L, 1)) != lua_strlen(L, 1))
+		if (std::strlen(lua_tostring(L, 1)) != lua_rawlen(L, 1))
 		{
 			lua_pushstring(L, "luabind does not support class names with extra nulls");
 			lua_error(L);
@@ -125,10 +125,12 @@ namespace luabind { namespace detail
 		void* c = lua_newuserdata(L, sizeof(class_rep));
 		new(c) class_rep(L, name);
 
+        lua_pushvalue(L, -1);
 		// make the class globally available
-		lua_pushstring(L, name);
-		lua_pushvalue(L, -2);
-		lua_settable(L, LUA_GLOBALSINDEX);
+//		lua_pushstring(L, name);
+//		lua_pushvalue(L, -2);
+//		lua_settable(L, LUA_GLOBALSINDEX);
+        lua_setglobal(L,name);
 
 		// also add it to the closure as return value
 		lua_pushcclosure(L, &stage2, 1);
