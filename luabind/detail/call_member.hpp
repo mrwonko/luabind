@@ -47,8 +47,14 @@
 
 namespace luabind
 {
+	namespace adl { class object; }
+
+	using adl::object;
+
 	namespace detail
 	{
+		template<int, class> struct find_conversion_policy;
+		template<int Index> struct push_args_from_tuple;
 
 		namespace mpl = boost::mpl;
 
@@ -96,7 +102,7 @@ namespace luabind
 #else
 						error_callback_fun e = get_error_callback();
 						if (e) e(L);
-	
+
 						assert(0 && "the lua function threw an error and exceptions are disabled."
 								"If you want to handle this error use luabind::set_error_callback()");
 						std::terminate();
@@ -123,11 +129,11 @@ namespace luabind
 					{
 						assert(lua_gettop(L) == top + 1);
 #ifndef LUABIND_NO_EXCEPTIONS
-						throw luabind::error(L); 
+						throw luabind::error(L);
 #else
 						error_callback_fun e = get_error_callback();
 						if (e) e(L);
-	
+
 						assert(0 && "the lua function threw an error and exceptions are disabled."
 							"If you want to handle this error use luabind::set_error_callback()");
 						std::terminate();
@@ -179,7 +185,7 @@ namespace luabind
 #else
 						error_callback_fun e = get_error_callback();
 						if (e) e(L);
-	
+
 						assert(0 && "the lua function threw an error and exceptions are disabled."
 							"If you want to handle this error use luabind::set_error_callback()");
 						std::terminate();
@@ -259,7 +265,7 @@ namespace luabind
 #else
 						error_callback_fun e = get_error_callback();
 						if (e) e(L);
-	
+
 						assert(0 && "the lua function threw an error and exceptions are disabled."
 							"If you want to handle this error use luabind::set_error_callback()");
 						std::terminate();
@@ -290,7 +296,7 @@ namespace luabind
 #else
 						error_callback_fun e = get_error_callback();
 						if (e) e(L);
-	
+
 						assert(0 && "the lua function threw an error and exceptions are disabled."
 							"If you want to handle this error use luabind::set_error_callback()");
 						std::terminate();

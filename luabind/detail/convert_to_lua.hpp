@@ -32,6 +32,8 @@
 
 namespace luabind { namespace detail
 {
+	template<int, class> struct find_conversion_policy;
+	struct default_policy;
 	template<bool IsReferenceWrapper = false>
 	struct unwrap_ref
 	{
@@ -59,7 +61,7 @@ namespace luabind { namespace detail
 	};
 
 	namespace mpl = boost::mpl;
-	
+
 	template<class T>
 	void convert_to_lua(lua_State* L, const T& v)
 	{
