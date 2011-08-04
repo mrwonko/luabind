@@ -26,9 +26,23 @@
 
 #include <luabind/config.hpp>
 
-#include <typeinfo>
-#include <string>
-#include <memory>
+
+#include <luabind/detail/decorate_type.hpp>
+#include <luabind/weak_ref.hpp>
+#include <luabind/back_reference.hpp>
+
+#include <luabind/value_wrapper.hpp>
+#include <luabind/from_stack.hpp>
+#include <luabind/typeid.hpp>
+
+#include <luabind/detail/class_registry.hpp>
+#include <luabind/detail/primitives.hpp>
+#include <luabind/detail/object_rep.hpp>
+#include <luabind/detail/typetraits.hpp>
+#include <luabind/detail/debug.hpp>
+#include <luabind/detail/class_rep.hpp>
+#include <luabind/detail/has_get_pointer.hpp>
+#include <luabind/detail/make_instance.hpp>
 
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_array.hpp>
@@ -46,24 +60,11 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/version.hpp>
 
-#include <luabind/detail/class_registry.hpp>
-#include <luabind/detail/primitives.hpp>
-#include <luabind/detail/object_rep.hpp>
-#include <luabind/detail/typetraits.hpp>
-#include <luabind/detail/debug.hpp>
-#include <luabind/detail/class_rep.hpp>
-#include <luabind/detail/has_get_pointer.hpp>
-#include <luabind/detail/make_instance.hpp>
-
 #include <boost/type_traits/add_reference.hpp>
 
-#include <luabind/detail/decorate_type.hpp>
-#include <luabind/weak_ref.hpp>
-#include <luabind/back_reference_fwd.hpp>
-
-#include <luabind/value_wrapper.hpp>
-#include <luabind/from_stack.hpp>
-#include <luabind/typeid.hpp>
+#include <typeinfo>
+#include <string>
+#include <memory>
 
 namespace luabind
 {
@@ -140,11 +141,11 @@ namespace luabind { namespace detail
 	{
 		static const T& t;
 
-		BOOST_STATIC_CONSTANT(bool, value = 
+		BOOST_STATIC_CONSTANT(bool, value =
 			sizeof(is_policy_cons_test(t)) == sizeof(yes_t));
 
 		typedef boost::mpl::bool_<value> type;
-	};	
+	};
 
 	template<bool>
 	struct is_string_literal
@@ -158,7 +159,7 @@ namespace luabind { namespace detail
 	{
 		static no_t helper(indirection_layer);
 	};
-	
+
 
     namespace mpl = boost::mpl;
 
@@ -215,7 +216,7 @@ namespace luabind { namespace detail
 		template<class T>
 		void apply(lua_State* L, T* ptr)
 		{
-			if (ptr == 0) 
+			if (ptr == 0)
 			{
 				lua_pushnil(L);
 				return;
@@ -249,7 +250,7 @@ namespace luabind { namespace detail
 		}
 
 		template<class T>
-		void converter_postcall(lua_State*, by_pointer<T>, int) 
+		void converter_postcall(lua_State*, by_pointer<T>, int)
 		{}
 	};
 
@@ -326,7 +327,7 @@ namespace luabind { namespace detail
 		template<class T>
 		void apply(lua_State* L, const T* ptr)
 		{
-			if (ptr == 0) 
+			if (ptr == 0)
 			{
 				lua_pushnil(L);
 				return;
@@ -470,7 +471,7 @@ namespace luabind { namespace detail
         {
             return 1;
         }
-		
+
 		void apply(lua_State* L, int val)
 		{
 			lua_pushnumber(L, val);
@@ -481,7 +482,7 @@ namespace luabind { namespace detail
 		{
 			return static_cast<T>(static_cast<int>(lua_tonumber(L, index)));
 		}
-		
+
 		template<class T>
 		static int match(lua_State* L, by_value<T>, int index)
 		{
@@ -530,7 +531,7 @@ namespace luabind { namespace detail
 		template<class T>
 		static int match(lua_State* L, by_const_reference<T>, int index)
 		{
-			return value_wrapper_traits<T>::check(L, index) 
+			return value_wrapper_traits<T>::check(L, index)
                 ? (std::numeric_limits<int>::max)() / LUABIND_MAX_ARITY
                 : -1;
 		}
