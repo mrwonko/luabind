@@ -64,53 +64,55 @@
 	support the __concat metamethod. This is a bit tricky, since it cannot be
 	treated as a normal operator. It is a binary operator but we want to use the
 	__tostring implementation for both arguments.
-	
+
 */
 
 #include <luabind/prefix.hpp>
-#include <luabind/config.hpp>
 
-#include <string>
-#include <map>
-#include <vector>
-#include <cassert>
+#include <luabind/config.hpp>           // for LUABIND_MAX_BASES, etc
+#include <luabind/detail/constructor.hpp>  // for construct
+#include <luabind/detail/deduce_signature.hpp>  // for deduce_signature
+#include <luabind/detail/enum_maker.hpp>  // for enum_maker
+#include <luabind/detail/inheritance.hpp>  // for registered_class, etc
+#include <luabind/detail/link_compatibility.hpp>
+#include <luabind/detail/primitives.hpp>  // for null_type, type_
+#include <luabind/detail/property.hpp>  // for access_member_ptr
+#include <luabind/detail/signature_match.hpp>  // for constructor
+#include <luabind/scope.hpp>            // for registration, scope
+#include <luabind/typeid.hpp>           // for type_id
+#include <luabind/detail/policy.hpp>    // for is_primitive (ptr only), etc
+#include <luabind/from_stack.hpp>       // for from_stack
+#include <luabind/make_function.hpp>    // for make_function, add_overload
+#include <luabind/object.hpp>           // for object, property
 
-#include <boost/bind.hpp>
+#include <boost/preprocessor/control/iif.hpp>  // for BOOST_PP_IIF_1, etc
+#include <boost/preprocessor/detail/auto_rec.hpp>
+#include <boost/preprocessor/facilities/intercept.hpp>
+#include <boost/preprocessor/logical/bool.hpp>  // for BOOST_PP_BOOL_0, etc
 #include <boost/preprocessor/repetition/enum_params.hpp>
 #include <boost/preprocessor/repetition/enum_params_with_a_default.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
-#include <boost/type_traits/is_same.hpp>
+#include <boost/type_traits/add_const.hpp>  // for add_const
+#include <boost/type_traits/add_reference.hpp>  // for add_reference
 #include <boost/type_traits/is_member_object_pointer.hpp>
+#include <boost/type_traits/is_polymorphic.hpp>  // for is_polymorphic
+#include <boost/type_traits/is_same.hpp>
+#include <boost/mpl/bool.hpp>           // for bool_
+#include <boost/mpl/bool_fwd.hpp>       // for true_, false_
+#include <boost/mpl/find_if.hpp>        // for find_if
+#include <boost/mpl/if.hpp>             // for if_
+#include <boost/mpl/not.hpp>            // for not_
+#include <boost/mpl/protect.hpp>        // for protect
 #include <boost/mpl/apply.hpp>
 #include <boost/mpl/lambda.hpp>
 #include <boost/mpl/logical.hpp>
-#include <boost/mpl/find_if.hpp>
-#include <boost/mpl/eval_if.hpp>
-#include <boost/mpl/logical.hpp>
 
-#include <luabind/config.hpp>
-#include <luabind/scope.hpp>
-#include <luabind/back_reference.hpp>
-#include <luabind/function.hpp>
-#include <luabind/dependency_policy.hpp>
-#include <luabind/detail/constructor.hpp>
-#include <luabind/detail/call.hpp>
-#include <luabind/detail/deduce_signature.hpp>
-#include <luabind/detail/primitives.hpp>
-#include <luabind/detail/property.hpp>
-#include <luabind/detail/typetraits.hpp>
-#include <luabind/detail/class_rep.hpp>
-#include <luabind/detail/call.hpp>
-#include <luabind/detail/object_rep.hpp>
-#include <luabind/detail/call_member.hpp>
-#include <luabind/detail/enum_maker.hpp>
-#include <luabind/detail/operator_id.hpp>
-#include <luabind/detail/pointee_typeid.hpp>
-#include <luabind/detail/link_compatibility.hpp>
-#include <luabind/detail/inheritance.hpp>
-#include <luabind/detail/signature_match.hpp>
-#include <luabind/no_dependency.hpp>
-#include <luabind/typeid.hpp>
+#include <auto_ptr.h>                   // for auto_ptr
+#include <string>                       // for string
+
+
+namespace luabind { namespace detail { struct no_dependency_policy; } }
+namespace luabind { namespace detail { template <int A, int B> struct dependency_policy; } }
 
 // to remove the 'this' used in initialization list-warning
 #ifdef _MSC_VER
@@ -126,7 +128,7 @@ namespace boost
 } // namespace boost
 
 namespace luabind
-{	
+{
 	namespace detail
 	{
 		struct unspecified {};
@@ -225,7 +227,7 @@ namespace luabind
 		// range [start_index, lua_gettop()]
 
 		LUABIND_API std::string stack_content_by_name(lua_State* L, int start_index);
-	
+
 		struct LUABIND_API create_class
 		{
 			static int stage1(lua_State* L);
@@ -252,7 +254,7 @@ namespace luabind
 		private:
 			template<class U> void operator,(U const&) const;
 			void operator=(static_scope const&);
-			
+
 			T& self;
 		};
 
@@ -261,7 +263,7 @@ namespace luabind
 		struct LUABIND_API class_base : scope
 		{
 		public:
-			class_base(char const* name);		
+			class_base(char const* name);
 
 			struct base_desc
 			{
@@ -500,7 +502,7 @@ namespace luabind
 
 	// registers a class in the lua environment
 	template<class T, class X1, class X2, class X3>
-	struct class_: detail::class_base 
+	struct class_: detail::class_base
 	{
 		typedef class_<T, X1, X2, X3> self_t;
 
@@ -580,7 +582,7 @@ namespace luabind
 #ifndef NDEBUG
 			detail::check_link_compatibility();
 #endif
-		   	init(); 
+		   	init();
 		}
 
 		template<class F>
@@ -757,9 +759,9 @@ namespace luabind
 		{
 			return detail::enum_maker<self_t>(*this);
 		}
-		
+
 		detail::static_scope<self_t> scope;
-		
+
 	private:
 		void operator=(class_ const&);
 
@@ -789,12 +791,12 @@ namespace luabind
 				,	no_bases
 			>::type bases_t;
 
-			typedef typename 
+			typedef typename
 				boost::mpl::if_<detail::is_bases<bases_t>
 					,	bases_t
 					,	bases<bases_t>
 				>::type Base;
-	
+
             class_base::init(
                 typeid(T)
               , detail::registered_class<T>::id
